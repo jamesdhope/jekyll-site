@@ -1,0 +1,215 @@
+I"o}<p>The Notebook described here supersedes my basic Recurrent Neural Net (RNN) for predicting multiple time series for the Wikipedia page forecasting competition. Instead, this RNN is constructed using the GRUCell rather than the BasicRNNCell which provides the model with persistence in the patterns observed over the series.</p>
+
+<p>The introductory paper by Junyoung Chung, Caglar Gulcehre, KyungHyun Cho, Yoshua Bengio proposing a GRU architecture can be found here: <a href="https://arxiv.org/abs/1412.3555">https://arxiv.org/abs/1412.3555</a>.</p>
+
+<p>For a full description of the competition, timescales, milestones, evaluation go to <a href="https://www.kaggle.com/c/web-traffic-time-series-forecasting">https://www.kaggle.com/c/web-traffic-time-series-forecasting</a>.</p>
+
+<p>Time series prediction problems are a difficult type of predictive modelling problems. Unlike regression predictive modelling, time series adds the complexity of a sequence dependence among the input variables. This interdependence can be modelled using a recurrent neural network.</p>
+
+<p>The model presented here is an RNN that takes a sequence of iputs and productes a sequence of outputs. The network is fed values over the last N time steps and is trained to predict values shifted by one, N+1, time steps into the future.</p>
+
+<p><b>Findings</b>. The model is then cycled forwards by 90 time steps to make predictions. However, the model shown here fails to converge on an acceptably low Mean Square Error and therefore we must be sceptical about the results. Furthermore, whilst the model runs in polynomial time, the large number of rows means that this deep learning approach would be best suited to a distributed architecture.</p>
+
+<p><b>Anyway, let’s dive into the code</b>. First, we’ll need to import tensorflow and numpy.</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="n">tf</span>
+<span class="kn">import</span> <span class="nn">numpy.random</span> <span class="k">as</span> <span class="n">rnd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="n">np</span></code></pre></figure>
+
+<p>Now, onto the construction phase. We’ll construct the RNN with 10 inputs (one for each Wiki page), 6 layers, 50 neurons per layer, and 39 time steps. The input X will have shape [-1, 39, 10]. The output y will have the same shape, and we’ll make use of tf.contrib.rnn.OutputProjectionWrapper to reduce the 39 * 10 outputs at each layer and the final layer to the 10 outputs we need. Using the OutputProjectionWrapper is computationally expensive and this will be something to come back to and improve. We’ll also make use of the Mean Square Error as the loss function.</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">n_steps</span> <span class="o">=</span> <span class="mi">39</span>
+<span class="n">n_inputs</span> <span class="o">=</span> <span class="mi">10</span> <span class="c1">#same as rows
+</span><span class="n">n_neurons</span> <span class="o">=</span> <span class="mi">50</span>
+<span class="n">n_outputs</span> <span class="o">=</span> <span class="mi">10</span> <span class="c1">#same as rows
+</span><span class="n">n_layers</span> <span class="o">=</span> <span class="mi">6</span>
+
+<span class="n">learning_rate</span> <span class="o">=</span> <span class="mf">0.001</span>
+
+<span class="n">X</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">tf</span><span class="p">.</span><span class="n">float32</span><span class="p">,</span> <span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="n">n_steps</span><span class="p">,</span> <span class="n">n_inputs</span><span class="p">])</span>
+
+<span class="c1">#y has the same shape
+</span><span class="n">y</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">tf</span><span class="p">.</span><span class="n">float32</span><span class="p">,</span> <span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="n">n_steps</span><span class="p">,</span> <span class="n">n_outputs</span><span class="p">])</span>
+
+<span class="c1">#create the cells and the layers of the network
+</span><span class="n">layers</span> <span class="o">=</span> <span class="p">[</span><span class="n">tf</span><span class="p">.</span><span class="n">contrib</span><span class="p">.</span><span class="n">rnn</span><span class="p">.</span><span class="n">OutputProjectionWrapper</span><span class="p">(</span><span class="n">tf</span><span class="p">.</span><span class="n">contrib</span><span class="p">.</span><span class="n">rnn</span><span class="p">.</span><span class="n">GRUCell</span><span class="p">(</span><span class="n">num_units</span><span class="o">=</span><span class="n">n_neurons</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="n">tf</span><span class="p">.</span><span class="n">nn</span><span class="p">.</span><span class="n">relu</span><span class="p">),</span><span class="n">output_size</span><span class="o">=</span><span class="n">n_outputs</span><span class="p">)</span> <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_layers</span><span class="p">)]</span>
+<span class="n">multi_layer_cell</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">contrib</span><span class="p">.</span><span class="n">rnn</span><span class="p">.</span><span class="n">MultiRNNCell</span><span class="p">(</span><span class="n">layers</span><span class="p">,</span> <span class="n">state_is_tuple</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">outputs</span><span class="p">,</span> <span class="n">states</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">nn</span><span class="p">.</span><span class="n">dynamic_rnn</span><span class="p">(</span><span class="n">multi_layer_cell</span><span class="p">,</span><span class="n">X</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="p">.</span><span class="n">float32</span><span class="p">)</span>
+
+<span class="k">print</span><span class="p">(</span><span class="n">outputs</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">y</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span>
+
+<span class="c1">#define the cost function and optimization
+</span><span class="n">loss</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">tf</span><span class="p">.</span><span class="n">square</span><span class="p">(</span><span class="n">outputs</span> <span class="o">-</span> <span class="n">y</span><span class="p">))</span>
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">train</span><span class="p">.</span><span class="n">AdamOptimizer</span><span class="p">(</span><span class="n">learning_rate</span><span class="o">=</span><span class="n">learning_rate</span><span class="p">)</span>
+<span class="n">training_op</span> <span class="o">=</span> <span class="n">optimizer</span><span class="p">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
+
+<span class="c1">#Adds an op to initialize all variables in the model
+</span><span class="n">init</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">global_variables_initializer</span><span class="p">()</span></code></pre></figure>
+
+<p>Next, we’ll load in the data for the first 10 Wikipedia pages. We’ll also need to strip off some rows from the time series data to reshape the data to the desired dimensions.</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="c1">#Import training data
+</span><span class="kn">import</span> <span class="nn">csv</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">genfromtxt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="n">np</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="n">tf</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="n">pd</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">Imputer</span>
+
+<span class="c1">#read the csv into a dataframe
+</span><span class="n">df</span><span class="o">=</span><span class="n">pd</span><span class="p">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s">'../input/train_1.csv'</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s">','</span><span class="p">,</span> <span class="n">error_bad_lines</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">warn_bad_lines</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="c1">#clean the data
+</span><span class="n">df</span><span class="p">.</span><span class="n">drop</span><span class="p">([</span><span class="s">'Page'</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inplace</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">.</span><span class="n">replace</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">nan</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="c1">#grab the relevant rows
+</span><span class="n">X_test</span> <span class="o">=</span> <span class="n">df</span><span class="p">.</span><span class="n">values</span><span class="p">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+<span class="n">rows</span> <span class="o">=</span> <span class="k">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">X_test</span><span class="p">))</span>
+
+<span class="c1">#number of rows to read 
+</span><span class="n">rows</span> <span class="o">=</span> <span class="mi">10</span>
+
+<span class="c1">#fetch the rows
+</span><span class="n">X_test</span> <span class="o">=</span> <span class="n">df</span><span class="p">.</span><span class="n">values</span><span class="p">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+<span class="n">X_test</span> <span class="o">=</span> <span class="n">X_test</span><span class="p">[:</span><span class="n">rows</span><span class="p">,</span><span class="mi">0</span><span class="p">:]</span>
+
+<span class="c1">#set the labelled data as the time step + 1
+</span><span class="n">Y_test</span> <span class="o">=</span> <span class="n">X_test</span><span class="p">[:,</span><span class="mi">1</span><span class="p">:]</span>
+
+<span class="c1">#strip n numbers off the rows for reshape
+</span><span class="n">X_test</span> <span class="o">=</span> <span class="n">X_test</span><span class="p">[:,:</span><span class="o">-</span><span class="mi">4</span><span class="p">]</span>
+<span class="n">Y_test</span> <span class="o">=</span> <span class="n">Y_test</span><span class="p">[:,:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">iteration</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">X_test</span><span class="p">)):</span>
+    <span class="n">plt</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">X_test</span><span class="p">[</span><span class="n">iteration</span><span class="p">,:],</span> <span class="n">label</span><span class="o">=</span><span class="s">"page"</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">iteration</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+
+<span class="n">plt</span><span class="p">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">"Time"</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">"Value"</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">show</span><span class="p">()</span>    
+    
+<span class="n">Y_test</span> <span class="o">=</span> <span class="n">Y_test</span><span class="p">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_steps</span><span class="p">,</span> <span class="n">n_inputs</span><span class="p">))</span>
+<span class="n">X_test</span> <span class="o">=</span> <span class="n">X_test</span><span class="p">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_steps</span><span class="p">,</span> <span class="n">n_inputs</span><span class="p">))</span></code></pre></figure>
+
+<p>Now onto the training phase. We’ll train the model using batch gradient descent. We’ll also permute the batches (not the time instances) to avoid overfitting the model.</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">numpy</span>
+<span class="n">n_epochs</span> <span class="o">=</span> <span class="mi">5000</span>
+<span class="n">batch_size</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">instances</span> <span class="o">=</span> <span class="n">X_test</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">saver</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">train</span><span class="p">.</span><span class="n">Saver</span><span class="p">()</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">"RNN construction"</span><span class="p">,</span> <span class="s">"n_layers"</span><span class="p">,</span> <span class="n">n_layers</span><span class="p">,</span> <span class="s">"n_neurons"</span><span class="p">,</span> <span class="n">n_neurons</span><span class="p">,</span> <span class="s">"n_inputs"</span><span class="p">,</span> <span class="n">n_inputs</span><span class="p">,</span> <span class="s">"n_outputs"</span><span class="p">,</span> <span class="n">n_outputs</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s">"training dataset"</span><span class="p">,</span> <span class="s">"shape"</span><span class="p">,</span> <span class="n">X_test</span><span class="p">.</span><span class="n">shape</span><span class="p">,</span> <span class="s">"instances"</span><span class="p">,</span> <span class="n">instances</span><span class="p">,</span> <span class="s">"batch_size"</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s">"training with"</span><span class="p">,</span> <span class="s">"n_epochs"</span><span class="p">,</span> <span class="n">n_epochs</span><span class="p">,</span> <span class="s">"iterations (instances // batch_size)"</span><span class="p">,</span> <span class="p">(</span><span class="n">instances</span><span class="o">//</span><span class="n">batch_size</span><span class="p">))</span>
+
+<span class="c1">#open a TensorFlow Session
+</span><span class="k">with</span> <span class="n">tf</span><span class="p">.</span><span class="n">Session</span><span class="p">()</span> <span class="k">as</span> <span class="n">sess</span><span class="p">:</span>
+    <span class="n">init</span><span class="p">.</span><span class="n">run</span><span class="p">()</span>
+    
+    <span class="c1">#Epoch is a single pass through the entire training set, followed by testing of the verification set.
+</span>    <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_epochs</span><span class="p">):</span>
+    
+        <span class="c1">#print("X_test",X_test)
+</span>        <span class="n">idxs</span> <span class="o">=</span> <span class="n">numpy</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="n">permutation</span><span class="p">(</span><span class="n">instances</span><span class="p">)</span> <span class="c1">#shuffled ordering
+</span>        <span class="c1">#print(idxs)
+</span>        <span class="c1">#print(idxs.shape)
+</span>        <span class="n">X_random</span> <span class="o">=</span> <span class="n">X_test</span><span class="p">[</span><span class="n">idxs</span><span class="p">]</span>
+        <span class="c1">#print('X_random', X_random)
+</span>        <span class="n">Y_random</span> <span class="o">=</span> <span class="n">Y_test</span><span class="p">[</span><span class="n">idxs</span><span class="p">]</span>
+        <span class="c1">#print('Y_random', Y_random)
+</span>    
+        <span class="c1">#Number of batches, here we exhaust the training set
+</span>        <span class="k">for</span> <span class="n">iteration</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">instances</span> <span class="o">//</span> <span class="n">batch_size</span><span class="p">):</span>   
+
+            <span class="c1">#get the next batch - we permute the examples in each batch
+</span>            <span class="c1">#X_batch, y_batch = next_batch(batch_size, n_steps)
+</span>            <span class="n">X_batch</span> <span class="o">=</span> <span class="n">X_random</span><span class="p">[</span><span class="n">iteration</span> <span class="o">*</span> <span class="n">batch_size</span><span class="p">:(</span><span class="n">iteration</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">batch_size</span><span class="p">]</span>
+            <span class="n">y_batch</span> <span class="o">=</span> <span class="n">Y_random</span><span class="p">[(</span><span class="n">iteration</span> <span class="o">*</span> <span class="n">batch_size</span><span class="p">):((</span><span class="n">iteration</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">batch_size</span><span class="p">)]</span>
+            
+            <span class="c1">#print("iteration", iteration, "X_batch", X_batch)
+</span>            <span class="c1">#print("iteration", iteration, "y_batch", y_batch)
+</span>            
+            <span class="n">X_batch</span> <span class="o">=</span> <span class="n">X_batch</span><span class="p">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_steps</span><span class="p">,</span> <span class="n">rows</span><span class="p">))</span>
+            <span class="n">y_batch</span> <span class="o">=</span> <span class="n">y_batch</span><span class="p">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_steps</span><span class="p">,</span> <span class="n">rows</span><span class="p">))</span>
+        
+            <span class="c1">#feed in the batch
+</span>            <span class="n">sess</span><span class="p">.</span><span class="n">run</span><span class="p">(</span><span class="n">training_op</span><span class="p">,</span> <span class="n">feed_dict</span><span class="o">=</span><span class="p">{</span><span class="n">X</span><span class="p">:</span> <span class="n">X_batch</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">y_batch</span><span class="p">})</span>
+        
+            <span class="k">if</span> <span class="p">(</span><span class="n">epoch</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">iteration</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+                <span class="c1">#check contents of first example in each batch
+</span>                <span class="c1">#print("iteration", iteration, "X_batch", X_batch[0])
+</span>                <span class="c1">#print("iteration", iteration, "y_batch", y_batch[0])
+</span>                <span class="n">mse</span> <span class="o">=</span> <span class="n">loss</span><span class="p">.</span><span class="nb">eval</span><span class="p">(</span><span class="n">feed_dict</span><span class="o">=</span><span class="p">{</span><span class="n">X</span><span class="p">:</span><span class="n">X_batch</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span><span class="n">y_batch</span><span class="p">})</span>
+                <span class="k">print</span><span class="p">(</span><span class="s">"epoch"</span><span class="p">,</span> <span class="n">epoch</span><span class="p">,</span> <span class="s">"iteration"</span><span class="p">,</span> <span class="n">iteration</span><span class="p">,</span> <span class="s">"</span><span class="se">\t</span><span class="s">MSE:"</span><span class="p">,</span> <span class="n">mse</span><span class="p">)</span>
+            
+            <span class="c1">#print(epoch)
+</span>    
+    <span class="n">saver</span><span class="p">.</span><span class="n">save</span><span class="p">(</span><span class="n">sess</span><span class="p">,</span> <span class="s">"./my_model"</span><span class="p">)</span> </code></pre></figure>
+
+<p>Note the Mean Square Error is not converging towards zero. The model is failing to make accurate predictions.</p>
+
+<p>I’ve shown below how you might go on to use the model to make predictions, looking 90 time steps forwards and appending to a array as we go, however we should be very sceptical about these results given in the high MSE.</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="c1">#Sequence generation using the model
+</span>
+<span class="n">max_iterations</span> <span class="o">=</span> <span class="mi">90</span> <span class="c1">#number of time steps to look forward
+</span>
+<span class="k">with</span> <span class="n">tf</span><span class="p">.</span><span class="n">Session</span><span class="p">()</span> <span class="k">as</span> <span class="n">sess</span><span class="p">:</span>                        
+    <span class="n">saver</span><span class="p">.</span><span class="n">restore</span><span class="p">(</span><span class="n">sess</span><span class="p">,</span> <span class="s">"./my_model"</span><span class="p">)</span> 
+
+    <span class="n">sequence</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_steps</span><span class="p">]</span> <span class="o">*</span> <span class="n">rows</span>
+    <span class="k">for</span> <span class="n">iteration</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_iterations</span><span class="p">):</span>
+        <span class="c1">#print("iteration", iteration)
+</span>        
+        <span class="n">X_batch</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">array</span><span class="p">(</span><span class="n">sequence</span><span class="p">[</span><span class="o">-</span><span class="n">n_steps</span><span class="o">*</span><span class="n">rows</span><span class="p">:]).</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">n_steps</span><span class="p">,</span><span class="n">rows</span><span class="p">)</span>
+        <span class="c1">#print(X_batch)
+</span>        
+        <span class="n">y_pred</span> <span class="o">=</span> <span class="n">sess</span><span class="p">.</span><span class="n">run</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="n">feed_dict</span><span class="o">=</span><span class="p">{</span><span class="n">X</span><span class="p">:</span> <span class="n">X_batch</span><span class="p">})</span>
+        <span class="c1">#print("Y", y_pred)
+</span>        <span class="c1">#print("numbers to be added", np.array(y_pred[0,n_steps-1]))
+</span>            
+        <span class="n">sequence</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">sequence</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">n_steps</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>      
+        <span class="c1">#print("sequence so far...", np.array(sequence))
+</span>        
+    <span class="c1">#print("end sequence", np.array(sequence))
+</span>    <span class="n">sequence</span><span class="p">[</span><span class="n">numpy</span><span class="p">.</span><span class="n">where</span><span class="p">(</span><span class="n">sequence</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="c1">#print(sequence)
+</span>    <span class="n">sequence</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">array</span><span class="p">(</span><span class="n">sequence</span><span class="p">).</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">rows</span><span class="p">)</span>
+    <span class="c1">#print(sequence)</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">plt</span><span class="p">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">4</span><span class="p">))</span>
+
+<span class="n">plt</span><span class="p">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">grid</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">title</span><span class="p">(</span><span class="s">"Full iteration of prediction"</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">iteration</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">rows</span><span class="p">):</span>
+    <span class="n">plt</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sequence</span><span class="p">[</span><span class="n">n_steps</span><span class="p">:,</span><span class="n">iteration</span><span class="p">],</span> <span class="n">label</span> <span class="o">=</span> <span class="s">"page"</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">iteration</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+
+<span class="n">plt</span><span class="p">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">"Time"</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">"Value"</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">legend</span><span class="p">()</span>
+
+<span class="n">plt</span><span class="p">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">grid</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">title</span><span class="p">(</span><span class="s">"First 10 time steps in predicted sequence"</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">iteration</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">rows</span><span class="p">):</span>
+    <span class="n">plt</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sequence</span><span class="p">[</span><span class="n">n_steps</span><span class="p">:</span><span class="n">n_steps</span><span class="o">+</span><span class="mi">10</span><span class="p">,</span><span class="n">iteration</span><span class="p">])</span>
+
+<span class="n">plt</span><span class="p">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">"Time"</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">"Value"</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">show</span><span class="p">()</span></code></pre></figure>
+
+<p><img src="\assets\wiki\forecast_1.jpg" />
+<img src="\assets\wiki\forecast_2.jpg" /></p>
+
+<p><b>Next steps</b>. Deep learning is not guarenteed to effectively model these time series. Identifying any cycles in these time series,  dependencies between them may help to determine hyperparameters that train a better fitting model and indeed the best suited underlying neural architecture. We might also consider feeding the network a sequence of inputs, i.e. a sequence-to-vector and vector-to-sequence network (also known as an encoder-decoder) with and without peep-holes and compare the performance of these architectures.</p>
+
+<p>The full notebook is available to fork on Kaggle here: <a href="https://www.kaggle.com/jamesdhope/wiki-competition-time-series-predictor-grucell">https://www.kaggle.com/jamesdhope/wiki-competition-time-series-predictor-grucell</a>.</p>
+:ET

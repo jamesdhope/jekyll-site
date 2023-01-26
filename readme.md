@@ -1,11 +1,12 @@
-To build
 
+
+```
 bundle exec jekyll build
 bundle exec jekyll serve
 
-To push
-
+cp jekyll-site/_site/* /_site
 cd _site
 git add .
 git commit -m ""
-git push origin main
+git push 
+```

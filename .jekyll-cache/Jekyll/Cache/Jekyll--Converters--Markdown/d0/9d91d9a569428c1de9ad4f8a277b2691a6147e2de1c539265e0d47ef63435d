@@ -1,0 +1,246 @@
+I"�n<p>Ever been faced with the challenge of pairing people based on their individual preferences? I can think of numerous situations in which such a task might arise, for example, in pairing up co-workers for a task or pairing up students for an activity.</p>
+
+<p>If each student were to (1) list out their peers they would ‘propose’ to work with (in order of preference), and (2) list out their peers in order of who they would ‘accept’ proposals from (also in order of preference) the Stable Marriage Algorithm would allow us to find a solution such that it would not be preferable for any two students to swap partners - in other words that the matching found by the algorithm is said to be ‘stable’.</p>
+
+<p>Consider that four students list out who they would like to work with as follows. Let’s call this the Proposers Table.</p>
+
+<style type="text/css">
+.tg  {border-collapse:collapse;border-spacing:0;}
+.tg td{font-family:Arial, sans-serif;font-size:14px;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
+.tg th{font-family:Arial, sans-serif;font-size:14px;font-weight:normal;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
+.tg .tg-le8v{background-color:#c0c0c0;vertical-align:top}
+.tg .tg-yw4l{vertical-align:top}
+</style>
+
+<table class="tg">
+  <tr>
+    <th class="tg-le8v">James</th>
+    <th class="tg-yw4l">James</th>
+    <th class="tg-yw4l">Floriane</th>
+    <th class="tg-yw4l">Jemery</th>
+    <th class="tg-yw4l">Matthew</th>
+  </tr>
+  <tr>
+    <td class="tg-le8v">Floriane</td>
+    <td class="tg-yw4l">Jemery</td>
+    <td class="tg-yw4l">Matthew</td>
+    <td class="tg-yw4l">James</td>
+    <td class="tg-yw4l">Floriane</td>
+  </tr>
+  <tr>
+    <td class="tg-le8v">Jeremy</td>
+    <td class="tg-yw4l">Matthew</td>
+    <td class="tg-yw4l">Floriane</td>
+    <td class="tg-yw4l">Jemery</td>
+    <td class="tg-yw4l">Jemery</td>
+  </tr>
+  <tr>
+    <td class="tg-le8v">Matthew</td>
+    <td class="tg-yw4l">Jemery</td>
+    <td class="tg-yw4l">Floriane</td>
+    <td class="tg-yw4l">James</td>
+    <td class="tg-yw4l">Matthew</td>
+  </tr>
+</table>
+
+<p>Consider also that the students list out who they would be willing to accept proposals from, in order of preference. Let’s call this the Acceptors Table.</p>
+
+<style type="text/css">
+.tg  {border-collapse:collapse;border-spacing:0;}
+.tg td{font-family:Arial, sans-serif;font-size:14px;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
+.tg th{font-family:Arial, sans-serif;font-size:14px;font-weight:normal;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
+.tg .tg-us36{vertical-align:top}
+.tg .tg-xxzo{background-color:#c0c0c0;vertical-align:top}
+</style>
+
+<table class="tg">
+  <tr>
+    <th class="tg-xxzo">James</th>
+    <th class="tg-us36">Floriane</th>
+    <th class="tg-us36">James</th>
+    <th class="tg-us36">Jemery</th>
+    <th class="tg-us36">Matthew</th>
+  </tr>
+  <tr>
+    <td class="tg-xxzo">Floriane</td>
+    <td class="tg-us36">Matthew</td>
+    <td class="tg-us36">James</td>
+    <td class="tg-us36">Floriane</td>
+    <td class="tg-us36">Jemery</td>
+  </tr>
+  <tr>
+    <td class="tg-xxzo">Jeremy</td>
+    <td class="tg-us36">James</td>
+    <td class="tg-us36">Jemery</td>
+    <td class="tg-us36">Floriane</td>
+    <td class="tg-us36">Matthew</td>
+  </tr>
+  <tr>
+    <td class="tg-xxzo">Matthew</td>
+    <td class="tg-us36">Floriane</td>
+    <td class="tg-us36">Jemery</td>
+    <td class="tg-us36">James</td>
+    <td class="tg-us36">Matthew</td>
+  </tr>
+</table>
+
+<p>For simplicity, we will allow the students to propose to themselves (i.e. to work with themselves). The proposers and accepters table may be encoded as follows:</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">Acceptors</span> <span class="n">Table</span><span class="p">:</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">]]</span>
+<span class="n">Proposers</span> <span class="n">Table</span><span class="p">:</span> <span class="p">[[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">]]</span></code></pre></figure>
+
+<p>Now, diving into the code. I have implemented the algorithm using three classes. First the Pool Class, which will hold and maintain the list of engagements.</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="c1"># Pool Class :: holds engagements
+</span><span class="k">class</span> <span class="nc">Pool</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">acceptors</span><span class="p">):</span>
+        <span class="s">"""
+        Construct an array which will hold the engagements. Instatiate each maximum preference number that 
+        """</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">engagements</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">empty</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">acceptors</span><span class="p">))</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">engagements</span><span class="p">.</span><span class="n">fill</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">nan</span><span class="p">)</span> 
+
+    <span class="k">def</span> <span class="nf">new_engagement</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">acceptor</span><span class="p">,</span><span class="n">proposer</span><span class="p">):</span>
+        <span class="s">"""
+        Update (replace) the engagement in the pool 
+        """</span>
+        <span class="k">if</span> <span class="n">proposer</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">.</span><span class="n">engagements</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">proposer</span><span class="p">,</span> <span class="s">"in position"</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">engagements</span><span class="p">.</span><span class="n">tolist</span><span class="p">().</span><span class="n">index</span><span class="p">(</span><span class="n">proposer</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="s">"set to NaN"</span><span class="p">)</span>
+            <span class="bp">self</span><span class="p">.</span><span class="n">engagements</span><span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">engagements</span><span class="p">.</span><span class="n">tolist</span><span class="p">().</span><span class="n">index</span><span class="p">(</span><span class="n">proposer</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">nan</span>
+
+        <span class="bp">self</span><span class="p">.</span><span class="n">engagements</span><span class="p">[</span><span class="n">acceptor</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">proposer</span>
+ 
+    <span class="k">def</span> <span class="nf">is_complete</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s">"""
+        Return True if complete
+        """</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">isnan</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">engagements</span><span class="p">).</span><span class="nb">any</span><span class="p">()):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">get_current_engagement</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">acceptor</span><span class="p">):</span> 
+        <span class="s">"""
+        Return the current engagement for a acceptor
+        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">.</span><span class="n">engagements</span><span class="p">[</span><span class="n">acceptor</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">get_all_engagements</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s">"""
+        Return all the current engagements
+        """</span>        
+        <span class="k">return</span> <span class="bp">self</span><span class="p">.</span><span class="n">engagements</span></code></pre></figure>
+
+<p>The Acceptor Class will hold the preferences of the person being proposed to, return prefereces and decide if a proposal is accepted or rejected, depending on their current engagement status. The is_proposal_accepted method will return True if either the member being proposed to has no current engagement or if the proposing member is higher up in their list of preferences than their current engagement, otherwise it will return False.</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="c1"># Acceptor Class :: holds the acceptor preferences
+</span><span class="k">class</span> <span class="nc">Acceptor</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">values</span><span class="p">):</span>
+        <span class="s">"""
+        Construct the acceptor preferences
+        """</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">values</span> <span class="o">=</span> <span class="n">values</span>
+
+    <span class="k">def</span> <span class="nf">get_preference_number</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">acceptor</span><span class="p">,</span><span class="n">proposer</span><span class="p">):</span>
+        <span class="s">"""
+        Return the preference of the acceptor for the proposer passed
+        """</span>
+        <span class="c1">#print(self.values[acceptor-1])
+</span>        <span class="k">if</span> <span class="n">proposer</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">.</span><span class="n">values</span><span class="p">[</span><span class="n">acceptor</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="p">.</span><span class="n">values</span><span class="p">[</span><span class="n">acceptor</span><span class="o">-</span><span class="mi">1</span><span class="p">].</span><span class="n">index</span><span class="p">(</span><span class="n">proposer</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span> 
+            <span class="k">return</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="nf">is_proposal_accepted</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">acceptor</span><span class="p">,</span><span class="n">proposer</span><span class="p">):</span>
+        <span class="s">"""
+        If proposer is in accepter preferences return true else return false
+        """</span>
+        <span class="k">if</span> <span class="n">debug</span><span class="p">:</span> <span class="p">(</span><span class="k">print</span><span class="p">(</span><span class="s">"acceptor preference of proposal"</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">get_preference_number</span><span class="p">(</span><span class="n">acceptor</span><span class="p">,</span><span class="n">proposer</span><span class="p">)))</span>
+        <span class="k">if</span> <span class="n">debug</span><span class="p">:</span> <span class="p">(</span><span class="k">print</span><span class="p">(</span><span class="s">"acceptor currently engaged to"</span><span class="p">,</span> <span class="n">pool_object</span><span class="p">.</span><span class="n">get_current_engagement</span><span class="p">(</span><span class="n">acceptor</span><span class="p">)))</span>
+        <span class="k">if</span> <span class="n">debug</span><span class="p">:</span> <span class="p">(</span><span class="k">print</span><span class="p">(</span><span class="s">"acceptor preference of current engagement"</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">get_preference_number</span><span class="p">(</span><span class="n">acceptor</span><span class="p">,</span><span class="n">pool_object</span><span class="p">.</span><span class="n">get_current_engagement</span><span class="p">(</span><span class="n">acceptor</span><span class="p">))))</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">pool_object</span><span class="p">.</span><span class="n">get_current_engagement</span><span class="p">(</span><span class="n">acceptor</span><span class="p">))</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">get_preference_number</span><span class="p">(</span><span class="n">acceptor</span><span class="p">,</span><span class="n">proposer</span><span class="p">)</span><span class="o">!=</span><span class="mi">0</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">get_preference_number</span><span class="p">(</span><span class="n">acceptor</span><span class="p">,</span><span class="n">proposer</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="p">.</span><span class="n">get_preference_number</span><span class="p">(</span><span class="n">acceptor</span><span class="p">,</span><span class="n">pool_object</span><span class="p">.</span><span class="n">get_current_engagement</span><span class="p">(</span><span class="n">acceptor</span><span class="p">))):</span> 
+            <span class="k">return</span> <span class="bp">True</span> 
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span></code></pre></figure>
+
+<p>The Proposer Class will hold the proposers preferences. The get_proposal method will return the next proposal and will be called until all of the members are engaged.</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="c1"># Proposer Class :: holds the proposer preferences
+</span><span class="k">class</span> <span class="nc">Proposer</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+        <span class="s">"""
+        Construct the proposer preferences
+        """</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">values</span> <span class="o">=</span> <span class="n">values</span>
+
+    <span class="k">def</span> <span class="nf">get_proposal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">proposer</span><span class="p">,</span><span class="n">iteration</span><span class="p">):</span>
+        <span class="s">"""
+        Return the acceptor value (proposal to try) for the proposer and iteration passed
+        """</span>
+        <span class="c1">#return self.values.iloc[proposer,iteration]
+</span>        <span class="k">return</span> <span class="bp">self</span><span class="p">.</span><span class="n">values</span><span class="p">[</span><span class="n">proposer</span><span class="p">][</span><span class="n">iteration</span><span class="p">]</span></code></pre></figure>
+
+<p>Next we call the Pool, Acceptor and Proposer constructor methods to instantiate the class objects. We use the encoded data above.</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="c1"># Instantiate the Acceptor and Proposer class passing the encoded data to the class constructor
+</span><span class="n">accepter_object</span> <span class="o">=</span> <span class="n">Acceptor</span><span class="p">(</span><span class="n">acceptors_table</span><span class="p">)</span>
+<span class="n">proposer_object</span> <span class="o">=</span> <span class="n">Proposer</span><span class="p">(</span><span class="n">proposers_table</span><span class="p">)</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">"Acceptors Table:"</span><span class="p">,</span> <span class="n">accepter_object</span><span class="p">.</span><span class="n">values</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s">"Proposers Table:"</span><span class="p">,</span> <span class="n">proposer_object</span><span class="p">.</span><span class="n">values</span><span class="p">)</span>
+
+<span class="c1"># Instantiate the pool class
+</span><span class="n">pool_object</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">unique</span><span class="p">(</span><span class="n">acceptors_table</span><span class="p">))</span>
+<span class="k">if</span> <span class="n">debug</span><span class="p">:</span> <span class="k">print</span><span class="p">(</span><span class="s">"Pool Object:"</span><span class="p">,</span> <span class="n">pool_object</span><span class="p">.</span><span class="n">get_all_engagements</span><span class="p">())</span></code></pre></figure>
+
+<p>Now the interesting part. We iterate through the proposals in the proposers_table (by row then column) calling the acceptor object each time to determine if a proposal is accepted. If a proposal is accepted then the pool object which maintains the list of engagements is updated. After each iteration, we check if we have a complete one-to-one bipartite mapping (i.e. each member is engaged) and if so we break out and print the final list of engagements. It’s that simple.</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="k">def</span> <span class="nf">stable_marriage</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">iteration</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">proposers_table</span><span class="p">)):</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">"</span><span class="se">\n</span><span class="s"> Round:"</span><span class="p">,</span> <span class="n">iteration</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">proposer</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">proposers_table</span><span class="p">[</span><span class="n">iteration</span><span class="p">])):</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">"PROPOSAL:"</span><span class="p">,</span> <span class="n">proposer</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="s">"----&gt;"</span><span class="p">,</span> <span class="n">proposers_table</span><span class="p">[</span><span class="n">proposer</span><span class="p">][</span><span class="n">iteration</span><span class="p">])</span>              
+            <span class="k">if</span> <span class="n">accepter_object</span><span class="p">.</span><span class="n">is_proposal_accepted</span><span class="p">(</span><span class="n">proposer_object</span><span class="p">.</span><span class="n">get_proposal</span><span class="p">(</span><span class="n">proposer</span><span class="p">,</span><span class="n">iteration</span><span class="p">),</span><span class="n">proposer</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span> <span class="c1">#if proposal is accepter
+</span>                <span class="k">if</span> <span class="n">debug</span><span class="p">:</span> <span class="k">print</span><span class="p">(</span><span class="s">"PROPOSAL ACCEPTED"</span><span class="p">)</span>
+                <span class="n">pool_object</span><span class="p">.</span><span class="n">new_engagement</span><span class="p">(</span><span class="n">proposer_object</span><span class="p">.</span><span class="n">get_proposal</span><span class="p">(</span><span class="n">proposer</span><span class="p">,</span><span class="n">iteration</span><span class="p">),</span><span class="n">proposer</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">debug</span><span class="p">:</span> <span class="k">print</span><span class="p">(</span><span class="s">"PROPOSAL FAILED"</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">"ENGAGEMENTS:"</span><span class="p">,</span> <span class="n">pool_object</span><span class="p">.</span><span class="n">get_all_engagements</span><span class="p">())</span>
+
+            <span class="k">if</span> <span class="n">pool_object</span><span class="p">.</span><span class="n">is_complete</span><span class="p">():</span>
+                <span class="k">return</span> <span class="n">pool_object</span><span class="p">.</span><span class="n">get_all_engagements</span><span class="p">()</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">"</span><span class="se">\n</span><span class="s"> FINAL ENGAGEMENTS:"</span><span class="p">,</span> <span class="n">stable_marriage</span><span class="p">())</span></code></pre></figure>
+
+<p>When we run the algorithm, this is the output.</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"> <span class="n">Round</span><span class="p">:</span> <span class="mi">1</span>
+<span class="n">PROPOSAL</span><span class="p">:</span> <span class="mi">1</span> <span class="o">----&gt;</span> <span class="mi">2</span>
+<span class="n">ENGAGEMENTS</span><span class="p">:</span> <span class="p">[</span><span class="n">nan</span>  <span class="mf">1.</span> <span class="n">nan</span> <span class="n">nan</span><span class="p">]</span>
+<span class="n">PROPOSAL</span><span class="p">:</span> <span class="mi">2</span> <span class="o">----&gt;</span> <span class="mi">4</span>
+<span class="n">ENGAGEMENTS</span><span class="p">:</span> <span class="p">[</span><span class="n">nan</span>  <span class="mf">1.</span> <span class="n">nan</span>  <span class="mf">2.</span><span class="p">]</span>
+<span class="n">PROPOSAL</span><span class="p">:</span> <span class="mi">3</span> <span class="o">----&gt;</span> <span class="mi">1</span>
+<span class="n">ENGAGEMENTS</span><span class="p">:</span> <span class="p">[</span> <span class="mf">3.</span>  <span class="mf">1.</span> <span class="n">nan</span>  <span class="mf">2.</span><span class="p">]</span>
+<span class="n">PROPOSAL</span><span class="p">:</span> <span class="mi">4</span> <span class="o">----&gt;</span> <span class="mi">2</span>
+<span class="n">ENGAGEMENTS</span><span class="p">:</span> <span class="p">[</span> <span class="mf">3.</span>  <span class="mf">4.</span> <span class="n">nan</span>  <span class="mf">2.</span><span class="p">]</span>
+
+ <span class="n">Round</span><span class="p">:</span> <span class="mi">2</span>
+<span class="n">PROPOSAL</span><span class="p">:</span> <span class="mi">1</span> <span class="o">----&gt;</span> <span class="mi">1</span>
+<span class="n">ENGAGEMENTS</span><span class="p">:</span> <span class="p">[</span> <span class="mf">1.</span>  <span class="mf">4.</span> <span class="n">nan</span>  <span class="mf">2.</span><span class="p">]</span>
+<span class="n">PROPOSAL</span><span class="p">:</span> <span class="mi">2</span> <span class="o">----&gt;</span> <span class="mi">1</span>
+<span class="n">ENGAGEMENTS</span><span class="p">:</span> <span class="p">[</span> <span class="mf">1.</span>  <span class="mf">4.</span> <span class="n">nan</span>  <span class="mf">2.</span><span class="p">]</span>
+<span class="n">PROPOSAL</span><span class="p">:</span> <span class="mi">3</span> <span class="o">----&gt;</span> <span class="mi">3</span>
+<span class="n">ENGAGEMENTS</span><span class="p">:</span> <span class="p">[</span><span class="mf">1.</span> <span class="mf">4.</span> <span class="mf">3.</span> <span class="mf">2.</span><span class="p">]</span>
+
+ <span class="n">FINAL</span> <span class="n">ENGAGEMENTS</span><span class="p">:</span> <span class="p">[</span><span class="mf">1.</span> <span class="mf">4.</span> <span class="mf">3.</span> <span class="mf">2.</span><span class="p">]</span></code></pre></figure>
+
+<p>So, our matchings are that James works with James, Floriane works with Matthew, Jemery works with Jemery, and Matthew works with Floriane (by symmetry). There are no two students in the group that would prefer to swap partners - hence the solution is said to be ‘stable’.</p>
+
+<p>A full version of the code is available to download from my GitHub page <a href="https://github.com/jamesdhope/teaching-lecturing-resources/blob/master/stableGroups.py">here.</a></p>
+
+<p>For more information on my implementation of the Stable Marriage Algorithm DM @jamesdhope or email <a href="mailto:"></a>.</p>
+:ET
