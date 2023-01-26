@@ -1,0 +1,16 @@
+current directory: /Users/jamesdhope/Documents/Projects/jamesdhope.github.io/myblog/_vendor/ruby/2.5.0/gems/http_parser.rb-0.6.0/ext/ruby_http_parser
+/usr/local/opt/ruby@2.5/bin/ruby -I /usr/local/lib/ruby/site_ruby/2.5.0 -r ./siteconf20211024-2264-1w1f8t4.rb extconf.rb
+creating Makefile
+
+current directory: /Users/jamesdhope/Documents/Projects/jamesdhope.github.io/myblog/_vendor/ruby/2.5.0/gems/http_parser.rb-0.6.0/ext/ruby_http_parser
+make DESTDIR\= clean
+
+current directory: /Users/jamesdhope/Documents/Projects/jamesdhope.github.io/myblog/_vendor/ruby/2.5.0/gems/http_parser.rb-0.6.0/ext/ruby_http_parser
+make DESTDIR\=
+compiling ruby_http_parser.c
+compiling ryah_http_parser.c
+linking shared-object ruby_http_parser.bundle
+
+current directory: /Users/jamesdhope/Documents/Projects/jamesdhope.github.io/myblog/_vendor/ruby/2.5.0/gems/http_parser.rb-0.6.0/ext/ruby_http_parser
+make DESTDIR\= install
+/usr/bin/install -c -m 0755 ruby_http_parser.bundle ./.gem.20211024-2264-ha8vaq
